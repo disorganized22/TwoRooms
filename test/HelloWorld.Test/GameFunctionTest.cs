@@ -7,10 +7,13 @@ using Newtonsoft.Json;
 using Xunit;
 using Amazon.Lambda.TestUtilities;
 using Amazon.Lambda.APIGatewayEvents;
+using Moq;
+using TwoRooms.Model;
+using TwoRooms.Repository;
 
 namespace TwoRooms.Tests
 {
-  public class FunctionTest
+  public class GameFunctionTest
   {
     private static readonly HttpClient client = new HttpClient();
 
@@ -31,10 +34,14 @@ namespace TwoRooms.Tests
             var request = new APIGatewayProxyRequest();
             var context = new TestLambdaContext();
             string location = GetCallingIP().Result;
-            Dictionary<string, string> body = new Dictionary<string, string>
+			Dictionary<string, object> reqbody = new Dictionary<string, object>
+			{
+				{ "NumberOfPlayers", 6 },
+			};
+			request.Body = JsonConvert.SerializeObject(reqbody);
+            Dictionary<string, object> body = new Dictionary<string, object>
             {
-                { "message", "hello world" },
-                { "location", location },
+				{ "NumberOfPlayers", 6 },
             };
 
             var expectedResponse = new APIGatewayProxyResponse
@@ -44,13 +51,11 @@ namespace TwoRooms.Tests
                 Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
             };
 
-            var function = new Function();
+			var mockRepo = new Mock<IGameRepository>();
+			mockRepo.Setup(repo => repo.Add(It.IsAny<Game>()));
+			var function = new GameFunction(mockRepo.Object);
             var response = await function.FunctionHandler(request, context);
-
-            Console.WriteLine("Lambda Response: \n" + response.Body);
-            Console.WriteLine("Expected Response: \n" + expectedResponse.Body);
-
-            Assert.Equal(expectedResponse.Body, response.Body);
+			Assert.Equal(expectedResponse.Body, response.Body);
             Assert.Equal(expectedResponse.Headers, response.Headers);
             Assert.Equal(expectedResponse.StatusCode, response.StatusCode);
     }
