@@ -5,11 +5,8 @@ using System.Threading.Tasks;
 using System.Net.Http;
 using System.Text.Json;
 using Amazon;
-using Amazon.DynamoDBv2;
-using Amazon.DynamoDBv2.DocumentModel;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
-using Amazon.Runtime;
 using TwoRooms.Model;
 using TwoRooms.Repository;
 
@@ -29,10 +26,10 @@ namespace TwoRooms
 
 		public GameFunction()
 		{
-			AccessKey = Environment.GetEnvironmentVariable("AccessKey");
-			SecretKey = Environment.GetEnvironmentVariable("SecretKey");
-			ServiceUrl = Environment.GetEnvironmentVariable("ServiceURL");
-			GameRepository = new GameRepository(AccessKey, SecretKey, ServiceUrl);
+			// AccessKey = Environment.GetEnvironmentVariable("AccessKey");
+			// SecretKey = Environment.GetEnvironmentVariable("SecretKey");
+			// ServiceUrl = Environment.GetEnvironmentVariable("ServiceURL");
+			// GameRepository = new GameRepository(AccessKey, SecretKey, ServiceUrl);
 		}
 
 		public GameFunction(IGameRepository repository)
@@ -68,7 +65,7 @@ namespace TwoRooms
 				game = JsonSerializer.Deserialize<Game>(apigProxyEvent.Body);
 				
 				Console.WriteLine("Game number is " + game.NumberOfPlayers);
-				GameRepository.Add(game);
+				//GameRepository.Add(game);
 				return new APIGatewayProxyResponse
 				{
 					Body = JsonSerializer.Serialize(game, options),

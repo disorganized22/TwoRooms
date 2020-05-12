@@ -26,6 +26,8 @@ To use the SAM CLI, you need the following tools.
 * SAM CLI - [Install the SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 * .NET Core - [Install .NET Core](https://www.microsoft.com/net/download)
 * Docker - [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community)
+* Install Lambda extension for dotnet with command
+* dotnet new -i Amazon.Lambda.Templates
 
 To build and deploy your application for the first time, run the following in your shell:
 
