@@ -4,6 +4,7 @@ namespace TwoRooms.Repository
 {
 	public interface IGameRepository
 	{
-		public void Add(Game game);
+		public void Put(Game game);
+		public Game Get(Game game);
 	}
 }

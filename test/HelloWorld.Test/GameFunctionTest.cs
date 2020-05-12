@@ -52,10 +52,11 @@ namespace TwoRooms.Tests
             };
 
 			var mockRepo = new Mock<IGameRepository>();
-			mockRepo.Setup(repo => repo.Add(It.IsAny<Game>()));
+			mockRepo.Setup(repo => repo.Put(It.IsAny<Game>()));
 			var function = new GameFunction(mockRepo.Object);
             var response = await function.FunctionHandler(request, context);
-			Assert.Equal(expectedResponse.Body, response.Body);
+			Game game =  System.Text.Json.JsonSerializer.Deserialize<Game>(response.Body);
+			Assert.Equal(game.NumberOfPlayers, 6);
             Assert.Equal(expectedResponse.Headers, response.Headers);
             Assert.Equal(expectedResponse.StatusCode, response.StatusCode);
     }

@@ -19,25 +19,16 @@ namespace TwoRooms
     public class GameFunction
     {
         private static readonly HttpClient httpClient = new HttpClient();
-		private string AccessKey;
-		private string SecretKey;
-		private string ServiceUrl;
 		private IGameRepository GameRepository;
 
 		public GameFunction()
 		{
-			// AccessKey = Environment.GetEnvironmentVariable("AccessKey");
-			// SecretKey = Environment.GetEnvironmentVariable("SecretKey");
-			// ServiceUrl = Environment.GetEnvironmentVariable("ServiceURL");
-			// GameRepository = new GameRepository(AccessKey, SecretKey, ServiceUrl);
+			 GameRepository = new GameRepository();
 		}
 
 		public GameFunction(IGameRepository repository)
 		{
 			GameRepository = repository;
-			AccessKey = Environment.GetEnvironmentVariable("AccessKey");
-			SecretKey = Environment.GetEnvironmentVariable("SecretKey");
-			ServiceUrl = Environment.GetEnvironmentVariable("ServiceURL");
 		}
 
 		private static async Task<string> GetCallingIP()
@@ -52,8 +43,8 @@ namespace TwoRooms
 
         public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)
         {
+			Console.WriteLine("Starting Game API Call!!!!!!");
 			int statusCode = 200;
-            var location = await GetCallingIP();
 			var options = new JsonSerializerOptions
 			{
 				IgnoreNullValues = true,
@@ -62,10 +53,13 @@ namespace TwoRooms
 
 			try
 			{
+				Console.WriteLine("Begin json to Game object!!!!!!");
 				game = JsonSerializer.Deserialize<Game>(apigProxyEvent.Body);
+				game.GameName = "Mike" + new Random().Next().ToString();
 				
 				Console.WriteLine("Game number is " + game.NumberOfPlayers);
-				//GameRepository.Add(game);
+				Console.WriteLine("Begin write Game to DynamoDB");
+				GameRepository.Put(game);
 				return new APIGatewayProxyResponse
 				{
 					Body = JsonSerializer.Serialize(game, options),

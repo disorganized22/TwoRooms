@@ -15,6 +15,7 @@ Resources:
       CodeUri: ./src/TwoRooms/
       Handler: TwoRooms::TwoRooms.GameFunction::FunctionHandler
       Runtime: dotnetcore3.1
+      Policies: AmazonDynamoDBFullAccess
       Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
         Variables:
           PARAM1: VALUE
@@ -23,7 +24,20 @@ Resources:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /hello
-            Method: get
+            Method: post
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: GameCatalog
+      AttributeDefinitions:
+        - AttributeName: GameName
+          AttributeType: S
+      KeySchema:
+        - AttributeName: GameName
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "5"
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
