@@ -18,7 +18,12 @@ namespace TwoRooms
 
     public class GameFunction
     {
-        private static readonly HttpClient httpClient = new HttpClient();
+        private static readonly HttpClient HttpClient = new HttpClient();
+		private static readonly JsonSerializerOptions Options = new JsonSerializerOptions
+		{
+			IgnoreNullValues = true,
+		};
+
 		private IGameRepository GameRepository;
 
 		public GameFunction()
@@ -33,39 +38,30 @@ namespace TwoRooms
 
 		private static async Task<string> GetCallingIP()
         {
-			httpClient.DefaultRequestHeaders.Accept.Clear();
-			httpClient.DefaultRequestHeaders.Add("User-Agent", "AWS Lambda .Net Client");
+			HttpClient.DefaultRequestHeaders.Accept.Clear();
+			HttpClient.DefaultRequestHeaders.Add("User-Agent", "AWS Lambda .Net Client");
 
-            var msg = await httpClient.GetStringAsync("http://checkip.amazonaws.com/").ConfigureAwait(continueOnCapturedContext:false);
+            var msg = await HttpClient.GetStringAsync("http://checkip.amazonaws.com/").ConfigureAwait(continueOnCapturedContext:false);
 
             return msg.Replace("\n","");
         }
 
         public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)
         {
-			Console.WriteLine("Starting Game API Call!!!!!!");
 			int statusCode = 200;
-			var options = new JsonSerializerOptions
-			{
-				IgnoreNullValues = true,
-			};
 			Game game = new Game();
 
 			try
 			{
-				Console.WriteLine("Begin json to Game object!!!!!!");
-				game = JsonSerializer.Deserialize<Game>(apigProxyEvent.Body);
-				game.GameName = "Mike" + new Random().Next().ToString();
-				
-				Console.WriteLine("Game number is " + game.NumberOfPlayers);
-				Console.WriteLine("Begin write Game to DynamoDB");
+				game = apigProxyEvent.Body!=null ? JsonSerializer.Deserialize<Game>(apigProxyEvent.Body) : new Game();
+
+				if (game.NumberOfPlayers == 0)
+					return CreateApiGatewayProxyResponse(game, 400);
+
+				game.GameName = "Mike" + new Random().Next(100).ToString();
+				game.Players = new List<Player>();
 				GameRepository.Put(game);
-				return new APIGatewayProxyResponse
-				{
-					Body = JsonSerializer.Serialize(game, options),
-					StatusCode = statusCode,
-					Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
-				};
+				return CreateApiGatewayProxyResponse(game, statusCode);
 			}
 			catch (Exception e)
 			{
@@ -73,17 +69,17 @@ namespace TwoRooms
 				statusCode = 500;
 			}
 
-			
-			// Verify that we receive a Number of players in the request
-			// create a new game object
-			// Assign the Game name 
-			// Initialise the player list
-            return new APIGatewayProxyResponse
-            {
-                Body = JsonSerializer.Serialize(game, options),
-                StatusCode = statusCode,
-                Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
-            };
+			return CreateApiGatewayProxyResponse(game, statusCode);
         }
-    }
+
+		private APIGatewayProxyResponse CreateApiGatewayProxyResponse(Game game,int statusCode)
+		{
+			return new APIGatewayProxyResponse
+			{
+				Body = JsonSerializer.Serialize(game, Options),
+				StatusCode = statusCode,
+				Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+			};
+		}
+	}
 }

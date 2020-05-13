@@ -1,64 +1,86 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Net.Http;
-using Newtonsoft.Json;
-using Xunit;
-using Amazon.Lambda.TestUtilities;
+using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
-using Moq;
+using Amazon.Lambda.TestUtilities;
+using Newtonsoft.Json;
+using NSubstitute;
+using NUnit.Framework;
 using TwoRooms.Model;
 using TwoRooms.Repository;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace TwoRooms.Tests
 {
-  public class GameFunctionTest
-  {
-    private static readonly HttpClient client = new HttpClient();
+	public class GameFunctionTest
+	{
+		private static readonly HttpClient client = new HttpClient();
+		private IGameRepository GameRepository;
+		private GameFunction TestSubject;
+		private Dictionary<string, string> Headers;
+		private APIGatewayProxyRequest Request;
+		private TestLambdaContext Context;
 
-    private static async Task<string> GetCallingIP()
-    {
-            client.DefaultRequestHeaders.Accept.Clear();
-            client.DefaultRequestHeaders.Add("User-Agent", "AWS Lambda .Net Client");
+		[SetUp]
+		public void SetUp()
+		{
+			GameRepository = Substitute.For<IGameRepository>();
+			TestSubject = new GameFunction(GameRepository);
+			Headers = new Dictionary<string, string> {{"Content-Type", "application/json"}};
+			Request = new APIGatewayProxyRequest();
+			Context = new TestLambdaContext();
 
-            var stringTask = client.GetStringAsync("http://checkip.amazonaws.com/").ConfigureAwait(continueOnCapturedContext:false);
-
-            var msg = await stringTask;
-            return msg.Replace("\n","");
-    }
-
-    [Fact]
-    public async Task TestHelloWorldFunctionHandler()
-    {
-            var request = new APIGatewayProxyRequest();
-            var context = new TestLambdaContext();
-            string location = GetCallingIP().Result;
 			Dictionary<string, object> reqbody = new Dictionary<string, object>
 			{
-				{ "NumberOfPlayers", 6 },
+				{"NumberOfPlayers", 6},
 			};
-			request.Body = JsonConvert.SerializeObject(reqbody);
-            Dictionary<string, object> body = new Dictionary<string, object>
-            {
-				{ "NumberOfPlayers", 6 },
-            };
+			Request.Body = JsonConvert.SerializeObject(reqbody);
+		}
 
-            var expectedResponse = new APIGatewayProxyResponse
-            {
-                Body = JsonConvert.SerializeObject(body),
-                StatusCode = 200,
-                Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
-            };
+		[Test]
+		public async Task FunctionHandler_WithRequestAndContext_ReturnsStatusCode()
+		{
+			var response = await TestSubject.FunctionHandler(Request, Context);
+			Assert.That(response.StatusCode, Is.EqualTo(200));
+		}
 
-			var mockRepo = new Mock<IGameRepository>();
-			mockRepo.Setup(repo => repo.Put(It.IsAny<Game>()));
-			var function = new GameFunction(mockRepo.Object);
-            var response = await function.FunctionHandler(request, context);
-			Game game =  System.Text.Json.JsonSerializer.Deserialize<Game>(response.Body);
-			Assert.Equal(game.NumberOfPlayers, 6);
-            Assert.Equal(expectedResponse.Headers, response.Headers);
-            Assert.Equal(expectedResponse.StatusCode, response.StatusCode);
-    }
-  }
+		[Test]
+		public async Task FunctionHandler_WithRequestAndContext_ReturnsProperHeaders()
+		{
+			var response = await TestSubject.FunctionHandler(Request, Context);
+			Assert.That(response.Headers, Is.EqualTo(Headers));
+		}
+
+		[Test]
+		public async Task FunctionHandler_WithRequestAndContext_ReturnsNewGameName()
+		{
+			var response = await TestSubject.FunctionHandler(Request, Context);
+			Game game = JsonSerializer.Deserialize<Game>(response.Body);
+			Assert.That(game.GameName.StartsWith("Mike"));
+		}
+
+		[Test]
+		public async Task FunctionHandler_WithoutPlayersEntered_Returns400BadRequest()
+		{
+			Request.Body = "{}";
+			var response = await TestSubject.FunctionHandler(Request, Context);
+			Assert.That(response.StatusCode, Is.EqualTo(400));
+		}
+
+		[Test]
+		public async Task FunctionHandler_WithoutRequestBody_Returns400BadRequest()
+		{
+			Request.Body = null;
+			var response = await TestSubject.FunctionHandler(Request, Context);
+			Assert.That(response.StatusCode, Is.EqualTo(400));
+		}
+
+		[Test]
+		public async Task FunctionHandler_WithException_Returns500StatusCode()
+		{
+			Request.Body = "{NateSuxz";
+			var response = await TestSubject.FunctionHandler(Request, Context);
+			Assert.That(response.StatusCode, Is.EqualTo(500));
+		}
+	}
 }
