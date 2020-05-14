@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestUtilities;
+using Games;
 using Newtonsoft.Json;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;

@@ -9,11 +9,11 @@ Globals:
     Timeout: 10
 
 Resources:
-  HelloWorldFunction:
+  GameFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      CodeUri: ./src/TwoRooms/
-      Handler: TwoRooms::TwoRooms.GameFunction::FunctionHandler
+      CodeUri: ./Games/
+      Handler: Games::Games.GameFunction::FunctionHandler
       Runtime: dotnetcore3.1
       Policies: AmazonDynamoDBFullAccess
       Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
@@ -23,7 +23,23 @@ Resources:
         HelloWorld:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
-            Path: /hello
+            Path: /game
+            Method: post
+  PlayerFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ./Players/
+      Handler: Players::Players.PlayerFunction::FunctionHandler
+      Runtime: dotnetcore3.1
+      Policies: AmazonDynamoDBFullAccess
+      Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
+        Variables:
+          PARAM1: VALUE
+      Events:
+        HelloWorld:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /game/{gamename}/player
             Method: post
   DynamoDBTable:
     Type: AWS::DynamoDB::Table
@@ -46,9 +62,15 @@ Outputs:
   HelloWorldApi:
     Description: "API Gateway endpoint URL for Prod stage for Hello World function"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-  HelloWorldFunction:
-    Description: "Hello World Lambda Function ARN"
-    Value: !GetAtt HelloWorldFunction.Arn
-  HelloWorldFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt HelloWorldFunctionRole.Arn
+  GameFunction:
+    Description: "Game Lambda Function ARN"
+    Value: !GetAtt GameFunction.Arn
+  GameFunctionIamRole:
+    Description: "Implicit IAM Role created for Game Function"
+    Value: !GetAtt GameFunctionRole.Arn
+  PlayerFunction:
+    Description: "Player Lambda Function ARN"
+    Value: !GetAtt PlayerFunction.Arn
+  PlayerFunctionIamRole:
+    Description: "Implicit IAM Role created for Player Function"
+    Value: !GetAtt PlayerFunctionRole.Arn
